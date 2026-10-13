@@ -5,7 +5,7 @@ RUN npm ci
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
 RUN npm run build
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.30.5-alpine3.24 AS runtime
 RUN addgroup -S -g 10001 app \
     && adduser -S -D -H -u 10001 -G app app \
     && mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp \

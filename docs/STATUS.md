@@ -6,6 +6,7 @@ Fecha de preparación: 2026-10-13.
 
 - Repositorio fuente esperado: efp30-api.
 - No estaba disponible junto al proyecto al iniciar este trabajo.
+- Intento de consulta remota: git ls-remote a GitHub falló porque el entorno no pudo resolver github.com.
 - SHA OpenAPI: **pendiente; el repositorio fuente no estaba accesible**.
 - Fixtures compartidos: **pendientes; src/mocks/shared/ contiene solo instrucciones**.
 - No se copió ni inventó ningún endpoint o contrato.
@@ -57,13 +58,21 @@ Al disponer de efp30-api, registrar el SHA exacto del commit de origen y el hash
 
 **Simulado:** ninguno; no se crean usuarios ni se envían invitaciones o correos.
 
-**Comando y resultado:** npm run build (se ejecuta al cerrar este hito).
+**Comando y resultado:** npm run build (0, TypeScript y Vite).
 
 **Pendiente:** integrar gestión de usuarios según OpenAPI y comprobar los permisos en backend.
 
 ## D5 · Integración real e imagen Docker
 
-El Dockerfile multietapa y el servidor HTTP no-root en el puerto 8080 están preparados. La integración con la API y los recorridos reales dependen de que estén disponibles efp30-api e efp30-institucional-web. Docker no está instalado en este entorno, por lo que no se pudo construir la imagen.
+**Preparado:** Dockerfile multietapa, imagen Nginx oficial con versión 1.30.5-alpine3.24, ejecución como UID/GID 10001, puerto 8080, healthcheck /healthz y transporte same-origin /api/v1 para el gateway.
+
+**Real:** build de frontend con npm run build (0, TypeScript y Vite).
+
+**Simulado:** ninguno.
+
+**Comandos y resultados:** docker --version no pudo ejecutarse porque Docker no está instalado; git ls-remote https://github.com/Maxigoge/efp30-api.git HEAD falló al resolver github.com. No fue posible construir/probar la imagen ni conectar el backend.
+
+**Pendiente:** importar OpenAPI y fixtures; integrar autenticación, CSRF y operaciones; construir y ejecutar la imagen; verificar en la API real y en el institucional los flujos obligatorios.
 
 Flujos pendientes:
 

@@ -6,7 +6,7 @@ Aplicación administrativa independiente para la Escuela de Formación Profesion
 
 D1 deja preparado el proyecto, el layout adaptable, la pantalla de acceso, los tipos de roles y el transporte HTTP. La API y sus fixtures compartidos no estaban disponibles al crear esta base. Por eso la vista previa no abre una sesión, no presenta contenido de ejemplo y no confirma escrituras. El modo mock está explícito y bloqueado hasta importar los mocks de efp30-api.
 
-El cliente usa llamadas relativas al mismo host bajo /api/v1. No define endpoints ni el mecanismo de CSRF: esas decisiones deben salir del OpenAPI oficial. El backend es responsable de validar ADMIN y EDITOR.
+El cliente usa la ruta relativa fija /api/v1 en el mismo host; no requiere una URL de API pública configurable. No define endpoints ni el mecanismo de CSRF: esas decisiones deben salir del OpenAPI oficial. El backend es responsable de validar ADMIN y EDITOR.
 
 Ver docs/STATUS.md para el estado por hito, el SHA del contrato y lo simulado frente a lo real.
 
