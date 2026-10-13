@@ -5,6 +5,7 @@ import { CourseWorkspace } from "./CourseWorkspace";
 import { CalendarWorkspace } from "./CalendarWorkspace";
 import { InstitutionWorkspace } from "./InstitutionWorkspace";
 import { MediaWorkspace } from "./MediaWorkspace";
+import { UsersWorkspace } from "./UsersWorkspace";
 type SectionKey = "inicio" | "noticias" | "cursos" | "calendario" | "institucion" | "medios" | "usuarios";
 const sections: { id: SectionKey; label: string; icon: IconName; group: string }[] = [
   { id: "inicio", label: "Resumen", icon: "grid", group: "GENERAL" },
@@ -38,7 +39,7 @@ export function PreviewShell({ onLogin }: { onLogin: () => void }) {
     </aside>
     <div className="admin-main"><header className="topbar"><button className="menu-button" aria-label="Abrir menú" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button><div className="breadcrumbs"><span>Administración</span><Icon name="chevron" size={15} /><strong>{current.title}</strong></div><div className="topbar__right"><button className="login-nav" onClick={onLogin}>Acceso <Icon name="lock" size={15} /></button><span className="mode-pill"><i /> Vista previa</span><span className="topbar__divider" /><span className="avatar">E</span></div></header>
       <main className="content"><div className="page-heading"><div><p className="eyebrow">PANEL DE ADMINISTRACIÓN</p><h1>{current.title}</h1><p>{current.description}</p></div>{active !== "inicio" && <button className="button button--primary" disabled title="Se habilitará al integrar la API"><Icon name="plus" size={17} /> Nuevo</button>}</div>
-      {active === "inicio" ? <DashboardPreview onNavigate={setActive} /> : active === "noticias" ? <NewsWorkspace /> : active === "cursos" ? <CourseWorkspace /> : active === "calendario" ? <CalendarWorkspace /> : active === "institucion" ? <InstitutionWorkspace /> : active === "medios" ? <MediaWorkspace /> : <ModulePlaceholder title={current.title} icon={current.icon} />}</main>
+      {active === "inicio" ? <DashboardPreview onNavigate={setActive} /> : active === "noticias" ? <NewsWorkspace /> : active === "cursos" ? <CourseWorkspace /> : active === "calendario" ? <CalendarWorkspace /> : active === "institucion" ? <InstitutionWorkspace /> : active === "medios" ? <MediaWorkspace /> : <UsersWorkspace />}</main>
       <footer className="page-footer"><span>Escuela de Formación Profesional N°30</span><span>Administración <b>·</b> Desarrollo</span></footer>
     </div>
     {menuOpen && <button className="mobile-scrim" aria-label="Cerrar menú" onClick={() => setMenuOpen(false)} />}
@@ -54,7 +55,4 @@ function DashboardPreview({ onNavigate }: { onNavigate: (section: SectionKey) =>
 }
 function WorkspaceCard({ title, detail, icon, tint, onClick }: { title: string; detail: string; icon: IconName; tint: string; onClick: () => void }) {
   return <button className="workspace-card" onClick={onClick}><span className={"workspace-card__icon workspace-card__icon--" + tint}><Icon name={icon} size={20} /></span><span className="workspace-card__copy"><strong>{title}</strong><small>{detail}</small></span><Icon className="workspace-card__arrow" name="arrow" size={17} /></button>;
-}
-function ModulePlaceholder({ title, icon }: { title: string; icon: IconName }) {
-  return <section className="module-placeholder"><span className="module-placeholder__icon"><Icon name={icon} size={25} /></span><p className="eyebrow">ESTRUCTURA PREPARADA</p><h2>{title}</h2><p>La interfaz para esta sección se desarrollará en su hito. Los datos y las acciones aparecerán al integrar el contrato oficial de efp30-api.</p><div className="module-placeholder__note"><Icon name="lock" size={16} /> Sin datos simulados · Sin cambios guardados</div></section>;
 }

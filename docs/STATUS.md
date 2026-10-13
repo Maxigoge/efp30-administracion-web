@@ -5,46 +5,69 @@ Fecha de preparación: 2026-10-13.
 ## Fuente del contrato y fixtures
 
 - Repositorio fuente esperado: efp30-api.
-- Disponibilidad local al iniciar: no encontrado junto al proyecto.
-- Búsqueda pública por nombre: sin resultado identificable.
-- SHA OpenAPI: **pendiente; no se pudo leer el repositorio fuente**.
-- Fixtures compartidos: **pendientes; src/mocks/shared/ está vacío salvo instrucciones**.
-- No se ha copiado, inferido ni modificado ningún contrato.
-- No se han modificado los repositorios efp30-web, efp30-api, efp30-institucional-web ni efp30-infra.
+- No estaba disponible junto al proyecto al iniciar este trabajo.
+- SHA OpenAPI: **pendiente; el repositorio fuente no estaba accesible**.
+- Fixtures compartidos: **pendientes; src/mocks/shared/ contiene solo instrucciones**.
+- No se copió ni inventó ningún endpoint o contrato.
+- No se modificaron los repositorios efp30-web, efp30-api, efp30-institucional-web ni efp30-infra.
 
-Cuando se habilite efp30-api, registrar aquí el SHA exacto del commit cuya especificación y fixtures se importen. Distinguir el SHA del OpenAPI si el archivo tiene un hash propio.
+Al disponer de efp30-api, registrar el SHA exacto del commit de origen y el hash del archivo OpenAPI si corresponde. Copiar de allí los mocks/fixtures antes de habilitar el modo mock.
 
 ## D1 · Proyecto, layout, cliente y autenticación
 
-**D1 · Base preparada:** aplicación React + TypeScript + Vite independiente; configuración, lockfile propio de npm generado, Dockerfile multietapa, Nginx sin root en 8080, layout adaptable, vista previa navegable, pantalla de login, tipos ADMIN/EDITOR, transporte same-origin /api/v1 y traducción común de 401, 403, validación, 409, errores de upload y red.
+**Preparado:** app independiente React + TypeScript + Vite, package.json y lockfile propios, pantalla de acceso, vista previa navegable, tipos ADMIN/EDITOR, transporte same-origin bajo /api/v1, gestión común de 401, 403, validación, 409, errores de upload y red. Dockerfile multietapa y Nginx no-root en puerto 8080.
 
-**Real:** únicamente la interfaz de vista previa local. Aún no existe integración con servidor.
+**Real:** interfaz local compilada. No hay integración con servidor.
 
-**Simulado:** ninguno. El modo de desarrollo no simula sesiones ni escrituras; presenta una vista de estructura vacía.
+**Simulado:** ninguno; la vista previa no muestra una sesión ni datos de ejemplo y bloquea escrituras.
 
-**Comandos y resultados:** npm ci --offline --no-audit --no-fund (0); npm run build (0, TypeScript y Vite; 35 módulos).
+**Comandos y resultados:** npm ci --offline --no-audit --no-fund (0); npm run build (0, TypeScript y Vite).
 
-**Pendiente para cerrar integración D1:** restauración de sesión, login, logout y CSRF conforme a OpenAPI; importar mocks compartidos; validar roles contra backend; habilitar adaptador.
+**Pendiente para cerrar D1:** restauración de sesión, login, logout y CSRF desde el contrato; importar mocks compartidos; conectar adaptador y validación de roles en backend.
 
 ## D2 · Noticias
 
-Pendiente. No se declaran rutas, campos ni operaciones sin el contrato oficial.
+**Preparado:** estructura del espacio editorial, estados, filtros y flujo visual borrador → publicado → archivado. Controles desactivados hasta integrar la API.
+
+**Real:** no hay registros ni conexión al sitio institucional.
+
+**Simulado:** ninguno; no se confirman guardados, publicaciones ni archivos.
+
+**Comando y resultado:** npm run build (0, TypeScript y Vite).
+
+**Pendiente:** editor de contenido, validaciones, concurrencia y operaciones ajustadas al OpenAPI.
 
 ## D3 · Cursos, galería, calendario e institución
 
-Pendiente. Incluir selección múltiple y orden de fotos públicas del carrusel, vista previa combinada y portada separada por curso. La API debe limitar el carrusel a fotos públicas de cursos publicados.
+**Preparado:** páginas de cursos/familias, calendario, biblioteca de medios e institución/contacto. La galería modela texto alternativo, orden, selección para el carrusel y portada independiente. La vista previa combinada admite únicamente fotos públicas de cursos publicados y las ordena por posición.
+
+**Real:** no hay API ni fotografías cargadas.
+
+**Simulado:** ninguno; la selección está vacía y las subidas no se aceptan.
+
+**Comando y resultado:** npm run build (0, TypeScript y Vite).
+
+**Pendiente:** conectar recursos, reglas de validación de archivos, estados editoriales y permisos ADMIN desde el contrato oficial.
 
 ## D4 · Usuarios administrativos
 
-Pendiente. El alta, la edición, los roles y los permisos ADMIN deben ajustarse al contrato y verificarse en backend.
+**Preparado:** vista vacía, roles ADMIN/EDITOR y aviso de que el servidor autoriza cada cambio.
+
+**Real:** ninguna cuenta cargada.
+
+**Simulado:** ninguno; no se crean usuarios ni se envían invitaciones o correos.
+
+**Comando y resultado:** npm run build (se ejecuta al cerrar este hito).
+
+**Pendiente:** integrar gestión de usuarios según OpenAPI y comprobar los permisos en backend.
 
 ## D5 · Integración real e imagen Docker
 
-La estructura Docker está preparada; la integración real y la verificación de extremo a extremo siguen pendientes.
+El Dockerfile multietapa y el servidor HTTP no-root en el puerto 8080 están preparados. La integración con la API y los recorridos reales dependen de que estén disponibles efp30-api e efp30-institucional-web. Docker no está instalado en este entorno, por lo que no se pudo construir la imagen.
 
-Flujos que requieren API disponible y autorización de entorno:
+Flujos pendientes:
 
 1. Crear borrador → publicar → verificar institucional → archivar.
-2. Subir foto de curso → habilitar portada → verificar carrusel institucional → deshabilitar → verificar retiro.
+2. Subir foto a curso → habilitar en portada → verificar carrusel institucional → deshabilitar → verificar retiro.
 
-No se hicieron llamadas de escritura, envíos de correo ni despliegues.
+No se ejecutaron escrituras externas, envíos de correo ni despliegues.
