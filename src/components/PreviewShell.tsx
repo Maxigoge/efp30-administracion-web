@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icon, type IconName } from "./Icon";
+import { NewsWorkspace } from "./NewsWorkspace";
 type SectionKey = "inicio" | "noticias" | "cursos" | "calendario" | "institucion" | "medios" | "usuarios";
 const sections: { id: SectionKey; label: string; icon: IconName; group: string }[] = [
   { id: "inicio", label: "Resumen", icon: "grid", group: "GENERAL" },
@@ -33,7 +34,7 @@ export function PreviewShell({ onLogin }: { onLogin: () => void }) {
     </aside>
     <div className="admin-main"><header className="topbar"><button className="menu-button" aria-label="Abrir menú" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button><div className="breadcrumbs"><span>Administración</span><Icon name="chevron" size={15} /><strong>{current.title}</strong></div><div className="topbar__right"><button className="login-nav" onClick={onLogin}>Acceso <Icon name="lock" size={15} /></button><span className="mode-pill"><i /> Vista previa</span><span className="topbar__divider" /><span className="avatar">E</span></div></header>
       <main className="content"><div className="page-heading"><div><p className="eyebrow">PANEL DE ADMINISTRACIÓN</p><h1>{current.title}</h1><p>{current.description}</p></div>{active !== "inicio" && <button className="button button--primary" disabled title="Se habilitará al integrar la API"><Icon name="plus" size={17} /> Nuevo</button>}</div>
-      {active === "inicio" ? <DashboardPreview onNavigate={setActive} /> : <ModulePlaceholder title={current.title} icon={current.icon} />}</main>
+      {active === "inicio" ? <DashboardPreview onNavigate={setActive} /> : active === "noticias" ? <NewsWorkspace /> : <ModulePlaceholder title={current.title} icon={current.icon} />}</main>
       <footer className="page-footer"><span>Escuela de Formación Profesional N°30</span><span>Administración <b>·</b> Desarrollo</span></footer>
     </div>
     {menuOpen && <button className="mobile-scrim" aria-label="Cerrar menú" onClick={() => setMenuOpen(false)} />}
