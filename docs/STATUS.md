@@ -47,12 +47,15 @@ Fecha de actualización: 2026-10-14.
 **Pendiente:** verificar carga y retiro de foto en backend real e institucional; comprobar permisos ADMIN/EDITOR contra el servidor y probar uploads reales. Los requisitos de portada de tarjeta y carrusel permanecen separados.
 ## D4 · Usuarios administrativos
 
-**Implementado hasta ahora:** estructura visual, roles y restricción de navegación ADMIN.
+**Implementado:** listado, alta directa sin invitación, edición de nombre/roles/estado y restablecimiento de contraseña contra `/admin/users`. Todas las escrituras envían la `version`; en `409` se conserva el formulario y la recarga del registro vigente es explícita. Validación de roles, email y contraseña de 12–128 caracteres. La contraseña se transmite al servidor y se limpia al cerrar el formulario; no se guarda en localStorage/sessionStorage ni se envía correo. El menú oculta Usuarios a EDITOR y cada API debe exigir ADMIN.
 
-**Real/mock:** sin operaciones conectadas.
+**Real:** integración escrita contra el OpenAPI. No probada contra backend real; queda por comprobar que éste invalide sesiones, proteja el último ADMIN y responda 403/409 como el contrato.
 
-**Pendiente:** listado, alta, cambio de rol/estado y restablecimiento de clave en API; permisos backend. No se enviarán emails.
+**Mock:** el servidor compartido protege `/admin/users` y no envía email; los tests generales pasan 8/8. La UI usa rutas relativas del modo configurado y no se confirmó con navegador autenticado.
 
+**Comandos/resultados:** `npm run build` (0); `npm run test:contract-mock` (8/8).
+
+**Pendiente:** integración real y comprobación de roles ADMIN/EDITOR y del conflicto del último ADMIN.
 ## D5 · Integración real e imagen Docker
 
 **Implementado hasta ahora:** `Dockerfile` multietapa y configuración Nginx prevista para estáticos, UID/GID 10001 y puerto 8080; proxy de desarrollo opcional para `/api/v1`.
