@@ -10,12 +10,17 @@ export function setUnauthorizedHandler(handler: (() => void) | undefined) {
 }
 
 async function csrfToken(): Promise<CsrfToken> {
-  const response = await fetch(base + "/auth/csrf", {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(base + "/auth/csrf", {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+  } catch {
+    throw new ApiRequestError({ kind: "network", message: "No se pudo solicitar el token CSRF.", fields: [] });
+  }
   if (!response.ok) throw await requestError(response);
   const token = await response.json() as CsrfToken;
   if (!token.token || token.headerName !== "X-CSRF-TOKEN") {
@@ -23,7 +28,6 @@ async function csrfToken(): Promise<CsrfToken> {
   }
   return token;
 }
-
 export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   body?: BodyInit | null;
   json?: unknown;

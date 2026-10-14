@@ -36,14 +36,15 @@ Fecha de actualización: 2026-10-14.
 
 ## D3 · Cursos, galería, calendario e institución
 
-**Implementado hasta ahora:** estructura visual; modelos de curso/foto; preview aislada que filtra por selección, foto pública y curso publicado. La portada independiente de la tarjeta está representada como requisito de UI.
+**Implementado:** listado y edición versionada de cursos/familias, publicación y archivo de cursos; subida múltiple de imágenes a medios públicos (cliente limita JPEG/PNG/WebP a 5 MiB; el servidor sigue validando los bytes); galería completa con alt, orden, habilitación y selección `showOnHomepage`; portada de tarjeta separada mediante `coverMediaId`; vista previa combinada que incluye las selecciones locales del curso sólo si está publicado y habilita imágenes públicas, más los otros cursos desde `/public/portada/carrusel`. Calendario editorial con intervalos ISO offset en `America/Argentina/Buenos_Aires` y fin exclusivo para eventos de día completo. Institución/contacto se muestra a ADMIN y escribe con versión; el backend también debe validar el permiso. Biblioteca admite imágenes y PDF con límites contractuales/compartidos; permite visibilidad, habilitación y descarga privada.
 
-**Real:** aún no hay operaciones conectadas.
+**Real:** clientes y formularios están conectados a rutas OpenAPI. No se ejecutaron contra backend real ni institucional porque no hay backend/DB aislada en ejecución.
 
-**Mock:** tests compartidos verifican retiro de carrusel al deshabilitar foto o archivar curso; la interfaz todavía no integra esos recursos.
+**Mock:** tests compartidos prueban CSRF/roles, upload, calendario y retiro del carrusel (8/8). La interfaz usa `/api/v1` y modo mock explícito; esos resultados no equivalen a integración real.
 
-**Pendiente:** formularios y operaciones de familias, cursos, fotos, eventos, medios e institución; vista previa combinada desde endpoint público; verificación real. Institución requiere rol ADMIN y confirmación también de servidor.
+**Comandos/resultados:** `npm run build` (0); `npm run test:contract-mock` (8/8); `git diff --check` (sin errores de whitespace; hay advertencias de conversión LF/CRLF de Git en Windows).
 
+**Pendiente:** verificar carga y retiro de foto en backend real e institucional; comprobar permisos ADMIN/EDITOR contra el servidor y probar uploads reales. Los requisitos de portada de tarjeta y carrusel permanecen separados.
 ## D4 · Usuarios administrativos
 
 **Implementado hasta ahora:** estructura visual, roles y restricción de navegación ADMIN.
