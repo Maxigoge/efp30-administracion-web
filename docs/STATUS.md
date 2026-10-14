@@ -4,16 +4,14 @@ Fecha de preparación: 2026-10-13.
 
 ## Fuente del contrato y fixtures
 
-- Repositorio fuente esperado: efp30-api.
-- No estaba disponible junto al proyecto al iniciar este trabajo.
-- Intento de consulta remota: git ls-remote a GitHub falló porque el entorno no pudo resolver github.com.
-- SHA OpenAPI: **pendiente; el repositorio fuente no estaba accesible**.
-- Fixtures compartidos: **pendientes; src/mocks/shared/ contiene solo instrucciones**.
-- No se copió ni inventó ningún endpoint o contrato.
-- No se modificaron los repositorios efp30-web, efp30-api, efp30-institucional-web ni efp30-infra.
+- Repositorio fuente: efp30-api, checkout local limpio en HEAD 6b21a6bcb5d5243d38f674b72cb6e4e1cff7f960.
+- Commit fuente de la revisión OpenAPI v1 copiada: **86682e93ab108f2484a75aa73f4888ecc72555b7**.
+- SHA-256 de contracts/openapi-v1.yaml: **A581A005883AC7F3E150D2685AF1F2064BB09EF570766663424CEEC13BD9FF53**.
+- Copiados sin modificar desde ese checkout: fixtures/editorial.json y mocks/server.mjs, server.test.mjs y README.md.
+- El fixture contiene identidades y contenido ficticios; el mock no persiste estado y sólo se usa con VITE_ADMIN_DATA_MODE=mock.
+- Los contratos no se modifican desde el frontend. Las rutas, cuerpos y restricciones de la app se toman del OpenAPI copiado.
 
-Al disponer de efp30-api, registrar el SHA exacto del commit de origen y el hash del archivo OpenAPI si corresponde. Copiar de allí los mocks/fixtures antes de habilitar el modo mock.
-
+No se modificaron efp30-api, efp30-web, efp30-institucional-web ni efp30-infra.
 ## D1 · Proyecto, layout, cliente y autenticación
 
 **Preparado:** app independiente React + TypeScript + Vite, package.json y lockfile propios, pantalla de acceso, vista previa navegable, tipos ADMIN/EDITOR, transporte same-origin bajo /api/v1, gestión común de 401, 403, validación, 409, errores de upload y red. Dockerfile multietapa y Nginx no-root en puerto 8080.
