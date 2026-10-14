@@ -24,13 +24,15 @@ Fecha de actualización: 2026-10-14.
 
 ## D2 · Noticias
 
-**Implementado hasta ahora:** navegación y estructura visual del módulo.
+**Implementado:** listado y filtro por estado/búsqueda; crear DRAFT; editar por UUID con `version`; publicar y archivar con control optimista; consulta posterior a `/public/noticias/{slug}` para mostrar visibilidad de la API pública. Valida campos del navegador, presenta `fieldErrors`, 401/403/409 y permite recargar explícitamente la versión actual en caso de conflicto. Slug queda inmutable al editar, según contrato.
 
-**Real:** sin formularios conectados ni registros reales.
+**Real:** integración escrita contra las operaciones OpenAPI. No ejecutada contra backend real: falta proceso API/base de datos aislada. La comprobación del módulo consulta la ruta pública del API, no una instancia del sitio institucional.
 
-**Mock:** aún no integrado en la interfaz.
+**Mock:** el fixture/mock está disponible; con `VITE_ADMIN_DATA_MODE=mock` se usa el servidor compartido. Tests existentes prueban el servidor mock, no esta pantalla.
 
-**Pendiente:** editor, borrador, actualización con versión, publicar, comprobar ruta pública y archivar; presentar validación/conflicto desde el backend.
+**Comandos/resultados:** `npm run build` (0); `npm run test:contract-mock` (8/8 pruebas de servidor mock).
+
+**Pendiente:** comprobar el flujo en backend real y contrastar la ruta en efp30-institucional-web al cerrar D5.
 
 ## D3 · Cursos, galería, calendario e institución
 

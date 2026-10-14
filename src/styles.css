@@ -33,3 +33,33 @@
 
 .logout-nav{display:flex;align-items:center;gap:7px;padding:8px 10px;color:#5c7181;background:#f3f6f7;border:1px solid #e5ebee;border-radius:5px;font-size:10px;cursor:pointer}.logout-nav:hover{color:#284a67;background:#eaf0f3}.loading-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#7d8994;background:#f6f8f9;font-size:11px}.loading-mark{display:grid;place-items:center;width:48px;height:48px;border:1px solid #9eafbc;border-radius:50%;color:#2e4e69;font:800 18px Manrope,sans-serif}.mock-login{display:flex;flex-direction:column;gap:5px;margin-top:15px;padding:11px 12px;background:#f8f5eb;border:1px solid #eee7d5;border-radius:5px}.mock-login strong{color:#7e704f;font-size:9px}.mock-login>span{color:#958b73;font-size:8px;line-height:1.4}.mock-login>div{display:flex;gap:8px;margin-top:4px}.mock-login button,.inline-error button{padding:5px 8px;color:#657b8a;background:#fff;border:1px solid #e1e8eb;border-radius:4px;font-size:8px;cursor:pointer}.inline-error{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:10px 12px;color:#875f55;background:#fbf1ee;border:1px solid #f0ded8;border-radius:5px;font-size:9px}
 @media(max-width:620px){.logout-nav{padding:7px;font-size:9px}.mock-login>div{flex-direction:column}.mock-login button{width:100%}}
+
+/* Contract-connected D2 editorial workspace */
+.module-search form { display: flex; }
+.module-search input { flex: 1; min-width: 100px; }
+.records-panel,.editor-panel { background: #fff; border: 1px solid #e1e5e9; border-radius: 16px; margin-top: 20px; overflow: hidden; }
+.records-heading,.editor-panel__heading { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; border-bottom:1px solid #edf0f2; }
+.records-heading h2,.editor-panel h2 { margin:0; font-size:19px; }
+.records-heading p,.editor-panel__heading p:not(.eyebrow) { margin:5px 0 0; color:#6f7b86; font-size:13px; }
+.records-empty { padding:32px 24px; margin:0; color:#75818b; }
+.record-row { display:flex; justify-content:space-between; gap:24px; padding:20px 24px; border-bottom:1px solid #edf0f2; }
+.record-row:last-child { border-bottom:0; }
+.record-row__main { min-width:0; }
+.record-row h3 { margin:8px 0 5px; font-size:16px; }
+.record-row p { margin:0 0 8px; color:#586570; font-size:14px; }
+.record-row small { color:#79858f; }
+.record-row__actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.status-tag { display:inline-flex; border-radius:999px; padding:4px 9px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.status-tag--draft { color:#805700; background:#fff4d8; }.status-tag--published { color:#176448; background:#e1f5eb; }.status-tag--archived { color:#66717b; background:#edf0f2; }
+.button--small { min-height:34px; padding:7px 12px; font-size:13px; }.danger-text { color:#a64040; }
+.editor-panel { padding-bottom:20px; }
+.editor-panel__heading { margin-bottom:20px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:0 24px; }
+.form-field { display:flex; flex-direction:column; gap:7px; font-size:13px; font-weight:600; color:#35414b; }
+.form-field input,.form-field textarea { width:100%; padding:10px 12px; border:1px solid #d8dee3; border-radius:8px; background:#fff; color:#1c2730; font:inherit; font-weight:400; }
+.form-field textarea { resize:vertical; line-height:1.5; }.form-field small { color:#75818b; font-weight:400; }.form-field--wide { grid-column:1 / -1; }
+.checkbox-field { display:flex; align-items:center; gap:8px; font-size:13px; color:#35414b; }.field-error { color:#a64040 !important; }
+.editor-actions { display:flex; justify-content:flex-end; gap:10px; padding:20px 24px 0; }
+.success-notice { display:flex; align-items:center; gap:10px; margin:14px 0; padding:12px 14px; background:#e8f7ee; color:#24694b; border-radius:9px; font-size:13px; }
+.inline-error { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+@media (max-width:720px) { .record-row { flex-direction:column; }.record-row__actions { justify-content:flex-start; flex-wrap:wrap; }.form-grid { grid-template-columns:1fr; }.form-field--wide { grid-column:auto; }.records-heading,.editor-panel__heading { padding:16px; }.form-grid { padding:0 16px; }.editor-actions { padding:18px 16px 0; } }
