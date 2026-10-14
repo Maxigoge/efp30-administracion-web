@@ -50,7 +50,6 @@ export function LoginPanel() {
       <span>El servidor compartido acepta cualquier contraseña no vacía para estas cuentas.</span>
       <div><button type="button" onClick={() => chooseMockAccount("admin@efp30.test")}>Completar ADMIN</button><button type="button" onClick={() => chooseMockAccount("editora@efp30.test")}>Completar EDITOR</button></div>
     </div>}
-    <div className="login-card__security"><Icon name="shield" size={17} /><span>Cookie HttpOnly del servidor · CSRF desde efp30-api</span></div>
   </section>;
 }
 

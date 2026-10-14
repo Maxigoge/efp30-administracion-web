@@ -12,7 +12,7 @@ function validate(file: File) {
   if (file.size < 1 || file.size > limit) throw new Error(file.type === "application/pdf" ? "El PDF debe pesar como máximo 10 MiB." : "La imagen debe pesar como máximo 5 MiB.");
 }
 
-export function MediaWorkspace() {
+export function MediaWorkspace({ onDirtyChange }: { onDirtyChange: (dirty: boolean, blocked?: boolean) => void }) {
   const [items, setItems] = useState<MediaAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -20,6 +20,7 @@ export function MediaWorkspace() {
   const [conflictedId, setConflictedId] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<MediaVisibility>("PUBLIC");
   const [uploadCount, setUploadCount] = useState(0);
+  const [selectedFiles, setSelectedFiles] = useState(0);
 
   const refresh = useCallback(async () => {
     setLoading(true); setError(null);
@@ -28,6 +29,11 @@ export function MediaWorkspace() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    const blocked = busy === "upload";
+    onDirtyChange(selectedFiles > 0 || blocked, blocked);
+    return () => onDirtyChange(false, false);
+  }, [selectedFiles, busy, onDirtyChange]);
 
   async function upload(files: FileList | null, event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const selectedFiles = Array.from(files ?? []); if (!selectedFiles.length) return;
@@ -36,7 +42,7 @@ export function MediaWorkspace() {
       selectedFiles.forEach(validate);
       for (const file of selectedFiles) { const uploaded = await api.uploadMedia(file, visibility); setItems((current) => [uploaded, ...current.filter((item) => item.id !== uploaded.id)]); }
     } catch (cause) { setError(errorText(cause)); }
-    finally { form.reset(); setBusy(null); setUploadCount(0); }
+    finally { form.reset(); setSelectedFiles(0); setBusy(null); setUploadCount(0); }
   }
   async function update(item: MediaAdmin, next: { enabled: boolean; visibility: MediaVisibility }) {
     setBusy(item.id); setError(null); setConflictedId(null);
@@ -61,7 +67,7 @@ export function MediaWorkspace() {
     <form className="upload-panel" onSubmit={(event) => { const input = event.currentTarget.elements.namedItem("files") as HTMLInputElement; void upload(input.files, event); }}>
       <div><p className="eyebrow">BIBLIOTECA COMPARTIDA</p><h2>Subir archivos</h2><p>La API vuelve a validar extensión, tipo real y tamaño del archivo.</p></div>
       <label className="form-field">Visibilidad<select value={visibility} onChange={(event) => setVisibility(event.target.value as MediaVisibility)}><option value="PUBLIC">Pública</option><option value="PRIVATE">Privada</option></select></label>
-      <label className="button button--secondary upload-label"><Icon name="plus" size={17} /> Elegir archivos<input name="files" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" required /></label>
+      <label className="button button--secondary upload-label"><Icon name="plus" size={17} /> Elegir archivos<input name="files" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" required onChange={(event) => setSelectedFiles(event.target.files?.length ?? 0)} /></label>
       <button className="button button--primary" disabled={busy === "upload"}>{busy === "upload" ? `Subiendo ${uploadCount}…` : "Subir"}</button>
       <small>JPEG, PNG o WebP hasta 5 MiB. PDF hasta 10 MiB.</small>
     </form>

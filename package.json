@@ -9,9 +9,13 @@
     "preview": "vite preview --host 0.0.0.0",
     "start": "vite --host 0.0.0.0 --port 5173",
     "mock:api": "node mocks/server.mjs",
-    "test:contract-mock": "node --test mocks/server.test.mjs"
+    "test:contract-mock": "node --test mocks/server.test.mjs",
+    "test:navigation": "node --test scripts/navigation.test.mjs"
   },
-  "dependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

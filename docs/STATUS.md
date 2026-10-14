@@ -12,13 +12,13 @@ Fecha de actualización: 2026-10-14.
 
 ## D1 · Proyecto, layout, cliente y autenticación
 
-**Implementado:** aplicación React + TypeScript + Vite con `package.json` y lockfile propios; layout; cliente `/api/v1`; login, restauración de sesión, logout, cookie de servidor con `credentials: include`, CSRF por `GET /auth/csrf` y cabecera contractual `X-CSRF-TOKEN`; renovación consultando el token en cada escritura y reintento único ante `CSRF_INVALID`; tipos y visualización de roles ADMIN/EDITOR. No se guardan credenciales, sesión ni CSRF en almacenamiento del navegador. El frontend restringe navegación ADMIN y el servidor conserva la autoridad de permisos.
+**Implementado:** aplicación React + TypeScript + Vite con `package.json` y lockfile propios; layout; cliente `/api/v1`; login, restauración de sesión, logout, cookie de servidor con `credentials: include`, CSRF por `GET /auth/csrf` y cabecera contractual `X-CSRF-TOKEN`; renovación consultando el token en cada escritura y reintento único ante `CSRF_INVALID`; tipos y visualización de roles ADMIN/EDITOR. No se guardan credenciales, sesión ni CSRF en almacenamiento del navegador. El frontend restringe navegación ADMIN y el servidor conserva la autoridad de permisos. Además, las secciones y editores de noticias/cursos (incluida galería) quedan en hash history: Atrás/Adelante restaura la vista; noticias, cursos, calendario, institución, usuarios, restablecimiento de clave y selección de archivos notifican cambios sin guardar; las escrituras/subidas en curso bloquean la salida.
 
 **Real:** contratos y fixtures copiados; `npm run build` compila el cliente real. El proceso API no está ejecutándose con base de datos aislada, por lo que login/sesión no se han comprobado contra un backend real.
 
 **Mock:** fixture ficticio y servidor compartido de `efp30-api`; se activa explícitamente con `VITE_ADMIN_DATA_MODE=mock`. El mock no persiste información y no simula correo. `npm run test:contract-mock` pasa 8 pruebas de su contrato (las pruebas verifican el servidor mock, no la interfaz ni integración real).
 
-**Comandos/resultados:** `npm ci --offline --no-audit --no-fund` (0, en el scaffold); `npm run build` (0); `npm run test:contract-mock` (8/8).
+**Comandos/resultados:** `npm ci --offline --no-audit --no-fund` (0, en el scaffold); `npm run build` (0); `npm run test:contract-mock` (8/8). `npm run test:navigation` (5/5); deep link de galería con recarga, Atrás/Adelante, confirmación de borrador de calendario, logout y 401/403 para sesiones/roles verificados en mock con el navegador integrado.
 
 **Pendiente:** comprobar login/sesión/CSRF contra API en ejecución. Docker todavía no está disponible en este equipo.
 

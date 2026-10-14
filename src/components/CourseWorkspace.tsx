@@ -3,6 +3,8 @@ import * as api from "../api/content";
 import type { CarouselItem, CourseAdmin, CoursePhoto, CoursePhotosResponse, EditorialStatus, FamilyAdmin, MediaAdmin, Modality, EnrollmentStatus } from "../api/types";
 import { ApiError, errorText, isConflict, TextField } from "./ApiFeedback";
 import { Icon } from "./Icon";
+import { courseEditorHash } from "../navigation.mjs";
+import type { AdminRoute } from "../navigation.mjs";
 
 const statuses: { label: string; value?: EditorialStatus }[] = [{ label: "Todos" }, { label: "Borradores", value: "DRAFT" }, { label: "Publicados", value: "PUBLISHED" }, { label: "Archivados", value: "ARCHIVED" }];
 const statusLabel: Record<EditorialStatus, string> = { DRAFT: "Borrador", PUBLISHED: "Publicado", ARCHIVED: "Archivado" };
@@ -10,7 +12,7 @@ type CourseDraft = { slug: string; title: string; familyId: string; summary: str
 const emptyCourse = (): CourseDraft => ({ slug: "", title: "", familyId: "", summary: "", bodyMarkdown: "", requirements: "", durationHours: "", modality: "PRESENTIAL", enrollmentStatus: "CONSULTATION", coverMediaId: "" });
 function courseDraft(course: CourseAdmin): CourseDraft { return { slug: course.slug, title: course.title, familyId: course.familyId, summary: course.summary, bodyMarkdown: course.bodyMarkdown, requirements: course.requirements.join("\n"), durationHours: course.durationHours == null ? "" : String(course.durationHours), modality: course.modality, enrollmentStatus: course.enrollmentStatus, coverMediaId: course.coverMediaId ?? "" }; }
 
-export function CourseWorkspace() {
+export function CourseWorkspace({ route, onNavigate, onDirtyChange }: { route: AdminRoute; onNavigate: (hash: string, options?: { replace?: boolean }) => boolean; onDirtyChange: (dirty: boolean, blocked?: boolean) => void }) {
   const [tab, setTab] = useState<"courses" | "families">("courses");
   const [status, setStatus] = useState<EditorialStatus | undefined>();
   const [query, setQuery] = useState("");
@@ -31,6 +33,7 @@ export function CourseWorkspace() {
   const [galleryDraft, setGalleryDraft] = useState<CoursePhoto[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const galleryRequestId = useRef(0);
+  const syncedEditorRoute = useRef("");
   const [familyDraft, setFamilyDraft] = useState<{ slug: string; name: string }>({ slug: "", name: "" });
   const [editingFamily, setEditingFamily] = useState<FamilyAdmin | null>(null);
 
@@ -53,6 +56,14 @@ export function CourseWorkspace() {
     ? !sameCourseDraft(editorDraft, courseDraft(editing))
     : creating && !sameCourseDraft(editorDraft, emptyCourse());
   const galleryDirty = Boolean(gallery && gallery.courseId === editing?.id && !samePhotoList(galleryDraft, gallery.photos));
+  const familyDirty = editingFamily
+    ? familyDraft.name !== editingFamily.name
+    : Boolean(familyDraft.name.trim() || familyDraft.slug.trim());
+  useEffect(() => {
+    const blocked = ["course-save", "gallery-save", "upload", "family"].includes(busy ?? "");
+    onDirtyChange(courseDirty || galleryDirty || familyDirty || blocked, blocked);
+    return () => onDirtyChange(false, false);
+  }, [courseDirty, galleryDirty, familyDirty, busy, onDirtyChange]);
 
   function resetGallery() {
     galleryRequestId.current += 1;
@@ -62,13 +73,12 @@ export function CourseWorkspace() {
     setGalleryLoading(false);
   }
 
-  function mayLeaveEditor() {
-    if (busy === "course-save" || busy === "gallery-save" || busy === "upload") {
-      setError("Esperá a que termine la operación actual antes de cambiar de curso.");
+  function mayStartRouteChange() {
+    if (["course-save", "gallery-save", "upload", "family"].includes(busy ?? "")) {
+      setError("Esperá a que termine la operación actual antes de cambiar de sección.");
       return false;
     }
-    if (!courseDirty && !galleryDirty) return true;
-    return window.confirm("Hay cambios sin guardar. Si continuás, se descartarán para abrir otro curso.");
+    return true;
   }
 
   async function loadGallery(course: CourseAdmin, baseline: CourseAdmin, draftAtOpen: CourseDraft, hadCourseChanges: boolean) {
@@ -115,66 +125,89 @@ export function CourseWorkspace() {
     }
   }
 
-  async function openCourseEditor(course: CourseAdmin, target: "details" | "gallery") {
-    if (editing?.id === course.id) {
-      if (target === "gallery" && editorTab === "gallery") {
+  const editorRouteKey = route.courseView ? route.courseView + ":" + (route.courseId ?? "") : "";
+  useEffect(() => {
+    let active = true;
+    if (!editorRouteKey) {
+      if (syncedEditorRoute.current) {
+        syncedEditorRoute.current = "";
+        setEditing(null);
+        setCreating(false);
+        setEditorDraft(emptyCourse());
         setEditorTab("details");
-        return;
+        resetGallery();
+        setError(null);
+        setConflictTarget(null);
       }
-      setEditorTab(target);
-      if (target === "gallery" && (galleryCourseId !== course.id || (!gallery && !galleryLoading))) {
-        await loadGallery(course, editing, editorDraft, courseDirty);
-      }
-      return;
+      return () => { active = false; };
     }
+    if (syncedEditorRoute.current === editorRouteKey) return () => { active = false; };
 
-    if (!mayLeaveEditor()) return;
-    const initialDraft = courseDraft(course);
-    setEditing(course);
-    setCreating(false);
-    setEditorDraft(initialDraft);
-    setEditorTab(target);
-    resetGallery();
-    setError(null);
-    setConflictTarget(null);
-    if (target === "gallery") await loadGallery(course, course, initialDraft, false);
+    if (route.courseView === "new") {
+      syncedEditorRoute.current = editorRouteKey;
+      setEditing(null);
+      setCreating(true);
+      setEditorDraft(emptyCourse());
+      setEditorTab("details");
+      resetGallery();
+      setError(null);
+      setConflictTarget(null);
+      return () => { active = false; };
+    }
+    if (!route.courseId) return () => { active = false; };
+
+    const open = (course: CourseAdmin) => {
+      if (!active) return;
+      syncedEditorRoute.current = editorRouteKey;
+      setEditing(course);
+      setCreating(false);
+      setEditorDraft(courseDraft(course));
+      setEditorTab(route.courseView === "gallery" ? "gallery" : "details");
+      resetGallery();
+      setError(null);
+      setConflictTarget(null);
+      if (route.courseView === "gallery") void loadGallery(course, course, courseDraft(course), false);
+    };
+
+    if (editing?.id === route.courseId) {
+      syncedEditorRoute.current = editorRouteKey;
+      setCreating(false);
+      setEditorTab(route.courseView === "gallery" ? "gallery" : "details");
+      if (route.courseView === "gallery" && (galleryCourseId !== editing.id || (!gallery && !galleryLoading))) {
+        void loadGallery(editing, editing, editorDraft, courseDirty);
+      }
+    } else {
+      const listed = courses.find((course) => course.id === route.courseId);
+      if (listed) open(listed);
+      else void api.getCourse(route.courseId).then(open).catch((cause) => {
+        if (active) setError(errorText(cause));
+      });
+    }
+    return () => { active = false; };
+  }, [editorRouteKey]);
+
+  function openCourseEditor(course: CourseAdmin, target: "details" | "gallery") {
+    if (!mayStartRouteChange()) return;
+    onNavigate(courseEditorHash(course.id, target === "gallery" ? "gallery" : "edit"));
   }
 
   function openNewCourse() {
-    if (!mayLeaveEditor()) return;
-    setEditing(null);
-    setCreating(true);
-    setEditorDraft(emptyCourse());
-    setEditorTab("details");
-    resetGallery();
-    setError(null);
-    setConflictTarget(null);
+    if (!mayStartRouteChange()) return;
+    onNavigate(courseEditorHash());
   }
 
   function closeEditor() {
-    if (!mayLeaveEditor()) return;
-    setEditing(null);
-    setCreating(false);
-    setEditorDraft(emptyCourse());
-    setEditorTab("details");
-    resetGallery();
-    setError(null);
-    setConflictTarget(null);
+    if (!mayStartRouteChange()) return;
+    onNavigate("#/cursos");
   }
 
   function selectEditorTab(next: "details" | "gallery") {
-    if (next === "details") {
-      setEditorTab("details");
-      return;
-    }
-    if (!editing) return;
-    setEditorTab("gallery");
-    if (galleryCourseId !== editing.id || (!gallery && !galleryLoading)) {
-      void loadGallery(editing, editing, editorDraft, courseDirty);
-    }
+    if (!editing || !mayStartRouteChange()) return;
+    onNavigate(courseEditorHash(editing.id, next === "gallery" ? "gallery" : "edit"));
   }
 
   function retryGallery() {
+
     if (editing) void loadGallery(editing, editing, editorDraft, courseDirty);
   }
   async function saveCourse(event: FormEvent<HTMLFormElement>) {
@@ -213,9 +246,14 @@ export function CourseWorkspace() {
       return;
     }
 
+    const createdFromDraft = creating;
     setEditing(saved);
     setCreating(false);
     setEditorDraft(courseDraft(saved));
+    if (createdFromDraft) {
+      onDirtyChange(false, false);
+      onNavigate(courseEditorHash(saved.id, "edit"), { replace: true });
+    }
     setGallery((current) => current?.courseId === saved.id ? { ...current, version: saved.version } : current);
     setError(null);
     try {
@@ -333,7 +371,7 @@ export function CourseWorkspace() {
   }
   async function saveFamily(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!editingFamily) return; setBusy("family"); setError(null);
-    try { await api.updateFamily(editingFamily.id, { version: editingFamily.version, name: familyDraft.name.trim(), active: editingFamily.active }); setEditingFamily(null); await refreshFamilies(); }
+    try { await api.updateFamily(editingFamily.id, { version: editingFamily.version, name: familyDraft.name.trim(), active: editingFamily.active }); setEditingFamily(null); setFamilyDraft({ slug: "", name: "" }); await refreshFamilies(); }
     catch (cause) { setError(errorText(cause)); if (isConflict(cause)) setConflictTarget("family"); }
     finally { setBusy(null); }
   }
@@ -354,7 +392,7 @@ export function CourseWorkspace() {
     <div className="workspace-tabs"><button className={tab === "courses" ? "workspace-tab workspace-tab--active" : "workspace-tab"} onClick={() => setTab("courses")}>Cursos</button><button className={tab === "families" ? "workspace-tab workspace-tab--active" : "workspace-tab"} onClick={() => setTab("families")}>Familias</button><button className="quiet-button workspace-refresh" onClick={() => { void refresh(); }} disabled={loading}><Icon name="arrow" size={15} /> Actualizar</button></div>
     {error && <ApiError error={error} onRetry={conflictTarget === "gallery" || conflictTarget === "course" ? () => { void reloadEditor(); } : conflictTarget === "family" ? () => { void reloadFamily(); } : undefined} />}
     {tab === "families" ? <section className="records-panel"><div className="records-heading"><div><h2>Familias profesionales</h2><p>{families.length} familias</p></div></div>
-      <form className="inline-create" onSubmit={editingFamily ? saveFamily : addFamily}><TextField label="Nombre"><input required maxLength={120} value={familyDraft.name} onChange={(event) => setFamilyDraft((current) => ({ ...current, name: event.target.value }))} /></TextField>{!editingFamily && <TextField label="Slug"><input required maxLength={100} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={familyDraft.slug} onChange={(event) => setFamilyDraft((current) => ({ ...current, slug: event.target.value }))} /></TextField>}<button className="button button--primary" disabled={busy === "family"}>{editingFamily ? "Guardar" : "Crear familia"}</button>{editingFamily && <button type="button" className="quiet-button" onClick={() => setEditingFamily(null)}>Cancelar</button>}</form>
+      <form className="inline-create" onSubmit={editingFamily ? saveFamily : addFamily}><TextField label="Nombre"><input required maxLength={120} value={familyDraft.name} onChange={(event) => setFamilyDraft((current) => ({ ...current, name: event.target.value }))} /></TextField>{!editingFamily && <TextField label="Slug"><input required maxLength={100} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={familyDraft.slug} onChange={(event) => setFamilyDraft((current) => ({ ...current, slug: event.target.value }))} /></TextField>}<button className="button button--primary" disabled={busy === "family"}>{editingFamily ? "Guardar" : "Crear familia"}</button>{editingFamily && <button type="button" className="quiet-button" onClick={() => { setEditingFamily(null); setFamilyDraft({ slug: "", name: "" }); }}>Cancelar</button>}</form>
       <div className="records-list">{families.map((family) => <article className="record-row" key={family.id}><div className="record-row__main"><span className={`status-tag ${family.active ? "status-tag--published" : "status-tag--archived"}`}>{family.active ? "Activa" : "Inactiva"}</span><h3>{family.name}</h3><small>/{family.slug} · v{family.version}</small></div><div className="record-row__actions"><button className="quiet-button" onClick={() => { setEditingFamily(family); setFamilyDraft({ slug: family.slug, name: family.name }); }}>Editar</button><button className="quiet-button" disabled={busy === family.id} onClick={() => { void toggleFamily(family); }}>{family.active ? "Desactivar" : "Activar"}</button></div></article>)}</div>
     </section> : <>
       <div className="module-toolbar"><label className="module-search"><Icon name="search" size={17} /><input type="search" placeholder="Buscar cursos" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void refreshCourses(); }} /></label><button className="button button--primary" onClick={openNewCourse}><Icon name="plus" size={17} /> Nuevo curso</button></div>

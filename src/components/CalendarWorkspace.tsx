@@ -38,7 +38,7 @@ function dateKey(iso: string) { return wallTime(new Date(iso), true); }
 function shiftDate(day: string, amount: number) { const date = new Date(`${day}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + amount); return date.toISOString().slice(0, 10); }
 const weekdayLabels = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-export function CalendarWorkspace() {
+export function CalendarWorkspace({ onDirtyChange }: { onDirtyChange: (dirty: boolean, blocked?: boolean) => void }) {
   const initialMonth = zonedNowParts().slice(0, 7);
   const [month, setMonth] = useState(initialMonth);
   const [status, setStatus] = useState<EditorialStatus | undefined>();
@@ -111,12 +111,18 @@ export function CalendarWorkspace() {
       </section>
       <aside className="calendar-side panel"><div className="records-heading"><div><p className="eyebrow">ADMINISTRACIÓN</p><h3>Estados editoriales</h3></div><button className="quiet-button" onClick={() => { void refresh(); }} disabled={loading}>Actualizar</button></div><div className="news-tabs">{stateFilters.map((filter) => <button key={filter.label} className={status === filter.value ? "news-tab news-tab--active" : "news-tab"} onClick={() => setStatus(filter.value)}>{filter.label}</button>)}</div><div className="calendar-admin-list">{loading ? "Consultando eventos…" : items.length === 0 ? "No hay eventos en este estado." : items.map((item) => <article className="calendar-admin-row" key={item.id}><span className={`status-tag status-tag--${item.status.toLowerCase()}`}>{stateLabel[item.status]}</span><strong>{item.title}</strong><small>{new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: item.allDay ? undefined : "short", timeZone: TZ }).format(new Date(item.startsAt))} · v{item.version}</small><div><button className="quiet-button" onClick={() => { setEditing(item); setCreating(false); }}>Editar</button>{item.status === "DRAFT" && <button className="quiet-button" disabled={busy === item.id} onClick={() => { void changeState(item, "publish"); }}>Publicar</button>}{item.status !== "ARCHIVED" && <button className="quiet-button danger-text" disabled={busy === item.id} onClick={() => { void changeState(item, "archive"); }}>Archivar</button>}</div></article>)}</div></aside>
     </div>
-    {(creating || editing) && <EventEditor key={`${editing?.id ?? "new"}-${editing?.version ?? 0}`} item={editing} busy={busy === "save"} onSave={save} onCancel={() => { setCreating(false); setEditing(null); }} />}
+    {(creating || editing) && <EventEditor key={`${editing?.id ?? "new"}-${editing?.version ?? 0}`} item={editing} busy={busy === "save"} onSave={save} onCancel={() => { setCreating(false); setEditing(null); }} onDirtyChange={onDirtyChange} />}
   </div>;
 }
 
-function EventEditor({ item, busy, onSave, onCancel }: { item: EventAdmin | null; busy: boolean; onSave: (draft: EventDraft, event: FormEvent<HTMLFormElement>) => Promise<void>; onCancel: () => void }) {
-  const [draft, setDraft] = useState<EventDraft>(item ? draftFrom(item) : blankEvent());
+function EventEditor({ item, busy, onSave, onCancel, onDirtyChange }: { item: EventAdmin | null; busy: boolean; onSave: (draft: EventDraft, event: FormEvent<HTMLFormElement>) => Promise<void>; onCancel: () => void; onDirtyChange: (dirty: boolean, blocked?: boolean) => void }) {
+  const baseline = useMemo(() => item ? draftFrom(item) : blankEvent(), [item]);
+  const [draft, setDraft] = useState<EventDraft>(() => baseline);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+  useEffect(() => {
+    onDirtyChange(dirty || busy, busy);
+    return () => onDirtyChange(false, false);
+  }, [dirty, busy, onDirtyChange]);
   function field<K extends keyof EventDraft>(key: K, value: EventDraft[K]) { setDraft((current) => ({ ...current, [key]: value })); }
   return <form className="editor-panel" onSubmit={(event) => { void onSave(draft, event); }}><div className="editor-panel__heading"><div><p className="eyebrow">EVENTO · {TZ}</p><h2>{item ? "Editar evento" : "Crear borrador"}</h2><p>La zona y el offset se calculan para America/Argentina/Buenos_Aires. El fin de día completo es exclusivo.</p></div><button type="button" className="icon-button" onClick={onCancel} aria-label="Cerrar"><Icon name="close" /></button></div>
     <div className="form-grid"><TextField label="Título"><input required maxLength={180} value={draft.title} onChange={(event) => field("title", event.target.value)} /></TextField><TextField label="Slug"><input required maxLength={120} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" disabled={Boolean(item)} value={draft.slug} onChange={(event) => field("slug", event.target.value)} /></TextField><TextField label="Ubicación"><input required maxLength={240} value={draft.location} onChange={(event) => field("location", event.target.value)} /></TextField><label className="checkbox-field"><input type="checkbox" checked={draft.allDay} onChange={(event) => { const enabled = event.target.checked; setDraft((current) => ({ ...current, allDay: enabled, startsAt: enabled ? current.startsAt.slice(0, 10) : `${current.startsAt.slice(0, 10)}T00:00`, endsAt: enabled ? (current.endsAt.slice(0, 10) === current.startsAt.slice(0, 10) ? shiftDate(current.endsAt.slice(0, 10), 1) : current.endsAt.slice(0, 10)) : `${current.endsAt.slice(0, 10)}T00:00` })); }} /> Todo el día</label><TextField label={draft.allDay ? "Empieza (día local)" : "Empieza (hora local)"}><input required type={draft.allDay ? "date" : "datetime-local"} value={draft.startsAt} onChange={(event) => field("startsAt", event.target.value)} /></TextField><TextField label={draft.allDay ? "Termina (día exclusivo)" : "Termina (hora local)"}><input required type={draft.allDay ? "date" : "datetime-local"} value={draft.endsAt} onChange={(event) => field("endsAt", event.target.value)} /></TextField><TextField label="Descripción" wide><textarea required maxLength={20000} rows={7} value={draft.description} onChange={(event) => field("description", event.target.value)} /></TextField></div>

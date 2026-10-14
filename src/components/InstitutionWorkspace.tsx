@@ -8,7 +8,7 @@ import { Icon } from "./Icon";
 type InstitutionDraft = Omit<InstitutionAdmin, "version">;
 function draftFrom(value: InstitutionAdmin): InstitutionDraft { return { name: value.name, description: value.description, address: value.address, email: value.email, phones: [...value.phones], socialLinks: value.socialLinks.map((link) => ({ ...link })) }; }
 
-export function InstitutionWorkspace() {
+export function InstitutionWorkspace({ onDirtyChange }: { onDirtyChange: (dirty: boolean, blocked?: boolean) => void }) {
   const [institution, setInstitution] = useState<InstitutionAdmin | null>(null);
   const [draft, setDraft] = useState<InstitutionDraft | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,12 @@ export function InstitutionWorkspace() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
+
+  const dirty = Boolean(institution && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(institution)));
+  useEffect(() => {
+    onDirtyChange(dirty || busy, busy);
+    return () => onDirtyChange(false, false);
+  }, [dirty, busy, onDirtyChange]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!institution || !draft) return;
