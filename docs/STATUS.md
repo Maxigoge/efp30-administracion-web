@@ -36,7 +36,7 @@ Fecha de actualización: 2026-10-14.
 
 ## D3 · Cursos, galería, calendario e institución
 
-**Implementado:** listado y edición versionada de cursos/familias, publicación y archivo de cursos; subida múltiple de imágenes a medios públicos (cliente limita JPEG/PNG/WebP a 5 MiB; el servidor sigue validando los bytes); galería completa con alt, orden, habilitación y selección `showOnHomepage`; portada de tarjeta separada mediante `coverMediaId`; vista previa combinada que incluye las selecciones locales del curso sólo si está publicado y habilita imágenes públicas, más los otros cursos desde `/public/portada/carrusel`. Calendario editorial con intervalos ISO offset en `America/Argentina/Buenos_Aires` y fin exclusivo para eventos de día completo. Institución/contacto se muestra a ADMIN y escribe con versión; el backend también debe validar el permiso. Biblioteca admite imágenes y PDF con límites contractuales/compartidos; permite visibilidad, habilitación y descarga privada.
+**Implementado:** listado y edición versionada de cursos/familias, publicación y archivo de cursos; subida múltiple de imágenes a medios públicos (cliente limita JPEG/PNG/WebP a 5 MiB; el servidor sigue validando los bytes); galería completa con alt, orden, habilitación y selección `showOnHomepage`; portada de tarjeta separada mediante `coverMediaId`; vista previa combinada que incluye las selecciones locales del curso sólo si está publicado y habilita imágenes públicas, más los otros cursos desde `/public/portada/carrusel`. Calendario editorial con intervalos ISO offset en `America/Argentina/Buenos_Aires` y fin exclusivo para eventos de día completo. Institución/contacto se muestra a ADMIN y escribe con versión; también prepara primera configuración con version=0 cuando GET responde el código contractual `INSTITUTION_NOT_CONFIGURED`. El backend también debe validar el permiso. Biblioteca admite imágenes y PDF con límites contractuales/compartidos; permite visibilidad, habilitación y descarga privada.
 
 **Real:** clientes y formularios están conectados a rutas OpenAPI. No se ejecutaron contra backend real ni institucional porque no hay backend/DB aislada en ejecución.
 
@@ -58,11 +58,15 @@ Fecha de actualización: 2026-10-14.
 **Pendiente:** integración real y comprobación de roles ADMIN/EDITOR y del conflicto del último ADMIN.
 ## D5 · Integración real e imagen Docker
 
-**Implementado hasta ahora:** `Dockerfile` multietapa y configuración Nginx prevista para estáticos, UID/GID 10001 y puerto 8080; proxy de desarrollo opcional para `/api/v1`.
+**Implementado:** imagen multietapa propia (`node:22-alpine` → `nginx:1.30.5-alpine3.24`); runtime con UID/GID 10001, puerto 8080, healthcheck `/healthz`, headers de seguridad, tamaño de request y build de estáticos. El contenedor no fabrica respuestas API: el Nginx gateway del despliegue conjunto enruta `/api/v1` en el mismo host. La etiqueta nginx está publicada como Docker Official Image en [Docker Hub](https://hub.docker.com/_/nginx/tags).
 
-**Verificación real:** `npm run build` sí está comprobado. Docker no pudo ejecutarse porque el CLI no está instalado; no se ha construido ni arrancado la imagen.
+**Real:** build estático validado con Vite/TypeScript. No se ejecutaron workflows contra backend ni sitio institucional. En este equipo no están disponibles Docker ni Podman, así que no se pudo construir/arrancar la imagen ni validar Nginx en contenedor.
 
-**Pendiente:** completar los recursos reales, construir y probar la imagen, conectar entorno local autorizado y verificar institucionalmente los dos flujos requeridos. No se modificaron repositorios relacionados ni hubo despliegue.
+**Mock:** `npm run test:contract-mock` pasa 8/8; comprueba reglas compartidas de news, versiones, calendario, roles, CSRF, carga y retiro de carrusel. No comprueba montaje del contenedor ni la integración visual.
+
+**Comandos/resultados:** `npm run build` (0); `npm run test:contract-mock` (8/8); `git diff --check` (0, sin errores); `Get-Command docker` y `Get-Command podman` no devolvieron runtime instalado; SHA de OpenAPI verificado con `certutil`.
+
+**Pendiente:** construir y ejecutar con Docker; validar login y CSRF real; hacer los dos flujos obligatorios contra backend real y abrir el sitio institucional para comprobar visibilidad/retiro. No se alteraron repositorios relacionados, secretos ni despliegues.
 
 ### Flujos reales pendientes
 

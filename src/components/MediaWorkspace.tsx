@@ -30,14 +30,13 @@ export function MediaWorkspace() {
   useEffect(() => { void refresh(); }, [refresh]);
 
   async function upload(files: FileList | null, event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (!files?.length) return;
-    setBusy("upload"); setError(null); setUploadCount(files.length);
+    event.preventDefault(); const form = event.currentTarget; const selectedFiles = Array.from(files ?? []); if (!selectedFiles.length) return;
+    setBusy("upload"); setError(null); setUploadCount(selectedFiles.length);
     try {
-      const uploaded: MediaAdmin[] = [];
-      for (const file of Array.from(files)) { validate(file); uploaded.push(await api.uploadMedia(file, visibility)); }
-      setItems((current) => [...uploaded, ...current]);
+      selectedFiles.forEach(validate);
+      for (const file of selectedFiles) { const uploaded = await api.uploadMedia(file, visibility); setItems((current) => [uploaded, ...current.filter((item) => item.id !== uploaded.id)]); }
     } catch (cause) { setError(errorText(cause)); }
-    finally { setBusy(null); setUploadCount(0); }
+    finally { form.reset(); setBusy(null); setUploadCount(0); }
   }
   async function update(item: MediaAdmin, next: { enabled: boolean; visibility: MediaVisibility }) {
     setBusy(item.id); setError(null); setConflictedId(null);

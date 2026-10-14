@@ -53,15 +53,18 @@ export function CourseWorkspace() {
   }
   async function saveCourse(draft: CourseDraft, event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy("course-save"); setError(null);
-    const fields = { title: draft.title.trim(), familyId: draft.familyId, summary: draft.summary.trim(), bodyMarkdown: draft.bodyMarkdown.trim(), requirements: draft.requirements.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), durationHours: draft.durationHours ? Number(draft.durationHours) : null, modality: draft.modality, enrollmentStatus: draft.enrollmentStatus, coverMediaId: draft.coverMediaId || null };
     try {
+      const requirements = draft.requirements.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      if (requirements.length > 50 || requirements.some((requirement) => requirement.length > 240)) throw new Error("Los cursos admiten hasta 50 requisitos de 240 caracteres cada uno.");
+      const durationHours = draft.durationHours ? Number(draft.durationHours) : null;
+      if (durationHours !== null && (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > 10000)) throw new Error("La duración debe ser un número entero de 1 a 10.000 horas.");
+      const fields = { title: draft.title.trim(), familyId: draft.familyId, summary: draft.summary.trim(), bodyMarkdown: draft.bodyMarkdown.trim(), requirements, durationHours, modality: draft.modality, enrollmentStatus: draft.enrollmentStatus, coverMediaId: draft.coverMediaId || null };
       const saved = editing ? await api.updateCourse(editing.id, { ...fields, version: editing.version }) : await api.createCourse({ ...fields, slug: draft.slug.trim() });
       if (selected?.id === saved.id) setSelected(saved);
       setEditing(null); setCreating(false); await refreshCourses(); await refreshCarousel();
     } catch (cause) { setError(errorText(cause)); if (isConflict(cause)) setConflictTarget("course"); }
     finally { setBusy(null); }
-  }
-  async function reloadCourse() { if (!editing) return; setBusy("reload-course"); try { setEditing(await api.getCourse(editing.id)); } catch (cause) { setError(errorText(cause)); } finally { setBusy(null); } }
+  }  async function reloadCourse() { if (!editing) return; setBusy("reload-course"); try { setEditing(await api.getCourse(editing.id)); } catch (cause) { setError(errorText(cause)); } finally { setBusy(null); } }
   async function changeState(course: CourseAdmin, action: "publish" | "archive") {
     setBusy(course.id); setError(null);
     try { const updated = action === "publish" ? await api.publishCourse(course.id, course.version) : await api.archiveCourse(course.id, course.version); if (selected?.id === updated.id) setSelected(updated); await refreshCourses(); await refreshCarousel(); }
@@ -72,15 +75,15 @@ export function CourseWorkspace() {
     if (!selected || !files?.length) return;
     setBusy("upload"); setError(null);
     try {
-      const additions: CoursePhoto[] = [];
-      for (const file of Array.from(files)) {
-        validateImage(file);
+      const selectedFiles = Array.from(files); selectedFiles.forEach(validateImage);
+      let position = galleryDraft.length;
+      for (const file of selectedFiles) {
         const uploaded = await api.uploadMedia(file, "PUBLIC");
         if (!uploaded.mimeType.startsWith("image/") || uploaded.visibility !== "PUBLIC" || !uploaded.enabled) throw new Error("La API no devolvió una imagen pública habilitada.");
-        additions.push({ id: null, mediaId: uploaded.id, alt: "", position: galleryDraft.length + additions.length, enabled: true, showOnHomepage: false });
+        const photo: CoursePhoto = { id: null, mediaId: uploaded.id, alt: "", position: position++, enabled: true, showOnHomepage: false };
+        setGalleryDraft((current) => [...current, photo]);
         setMedia((current) => [uploaded, ...current.filter((item) => item.id !== uploaded.id)]);
       }
-      setGalleryDraft((current) => [...current, ...additions]);
     } catch (cause) { setError(errorText(cause)); }
     finally { setBusy(null); }
   }
@@ -167,7 +170,7 @@ function GalleryEditor({ course, version, photos, media, carousel, loading, savi
       return [{ id: photo.id ?? `pending-${photo.mediaId}`, courseId: course.id, courseSlug: course.slug, courseTitle: course.title, mediaId: photo.mediaId, imageUrl: asset.url, alt: photo.alt, position: photo.position }];
     }) : []),
   ].sort((left, right) => left.position - right.position || left.courseId.localeCompare(right.courseId) || left.id.localeCompare(right.id));
-  return <section className="gallery-editor gallery-editor--connected"><div className="gallery-editor__heading"><div><p className="eyebrow">GALERÍA DE {course.title.toLocaleUpperCase()}</p><h2>Fotografías y carrusel</h2><p>La portada de tarjeta usa el campo independiente del curso. El carrusel se confirma desde la ruta pública.</p></div><label className="button button--primary upload-label"><Icon name="plus" size={17} />{uploading ? "Subiendo…" : "Subir fotos"}<input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading} onChange={(event) => { onFileChange(event.target.files); event.currentTarget.value = ""; }} /></label></div>
+  return <section className="gallery-editor gallery-editor--connected"><div className="gallery-editor__heading"><div><p className="eyebrow">GALERÍA DE {course.title.toLocaleUpperCase()}</p><h2>Fotografías y carrusel</h2><p>La portada de tarjeta usa el campo independiente del curso. El carrusel se confirma desde la ruta pública.</p></div><label className="button button--primary upload-label"><Icon name="plus" size={17} />{uploading ? "Subiendo…" : "Subir fotos"}<input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading || loading} onChange={(event) => { onFileChange(event.target.files); event.currentTarget.value = ""; }} /></label></div>
     {loading ? <p className="records-empty">Cargando galería…</p> : <div className="gallery-connected-grid"><div className="photo-list">{photos.length === 0 ? <p className="records-empty">Subí una o varias fotografías para agregarlas a este curso.</p> : photos.map((photo, index) => { const asset = media.get(photo.mediaId); return <article className="photo-row" key={photo.id ?? `${photo.mediaId}-${index}`}><div className="photo-row__thumb">{asset?.url ? <img src={asset.url} alt="" /> : <Icon name="media" size={24} />}</div><div className="photo-row__details"><strong>{asset?.originalName ?? "Imagen"}</strong><label>Texto alternativo<input required minLength={1} maxLength={240} value={photo.alt} onChange={(event) => onChange(photos.map((entry, i) => i === index ? { ...entry, alt: event.target.value } : entry))} /></label><div className="photo-toggles"><label><input type="checkbox" checked={photo.enabled} onChange={(event) => onChange(photos.map((entry, i) => i === index ? { ...entry, enabled: event.target.checked } : entry))} /> Habilitada</label><label><input type="checkbox" checked={photo.showOnHomepage} onChange={(event) => onChange(photos.map((entry, i) => i === index ? { ...entry, showOnHomepage: event.target.checked } : entry))} /> Mostrar en portada</label><label>Orden<input type="number" min="0" value={photo.position} onChange={(event) => onChange(photos.map((entry, i) => i === index ? { ...entry, position: Number(event.target.value) } : entry))} /></label><button type="button" className="quiet-button danger-text" onClick={() => onChange(photos.filter((_, i) => i !== index))}>Quitar</button></div></div></article>; })}</div>
       <aside className="carousel-preview"><div className="carousel-preview__top"><div><div><strong>Vista previa combinada</strong><small>Selección local + fotos públicas de otros cursos</small></div></div><span className="preview-count">{combinedPreview.length}</span></div>{combinedPreview.length === 0 ? <div className="carousel-preview__empty"><span className="carousel-preview__frame"><Icon name="media" size={26} /></span><strong>Este curso no aporta fotos al carrusel</strong><small>Verificá curso publicado, imagen pública habilitada y selección.</small></div> : <div className="carousel-preview__items">{combinedPreview.map((item) => <figure key={item.id}><img src={item.imageUrl} alt={item.alt} /><figcaption>{item.courseTitle} · {item.alt}</figcaption></figure>)}</div>}</aside></div>}
     <div className="editor-actions"><span className="gallery-version">{photos.length} fotos · versión {version}</span><button type="button" className="button button--primary" disabled={saving || loading} onClick={onSave}>{saving ? "Guardando…" : "Guardar galería"}</button></div>

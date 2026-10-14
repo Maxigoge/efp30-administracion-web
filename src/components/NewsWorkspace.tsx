@@ -39,7 +39,7 @@ export function NewsWorkspace() {
     event.preventDefault();
     setBusy("save"); setError(null); setFieldIssues({});
     try {
-      if (editing) await newsApi.updateNews(editing.id, { ...input, version: editing.version });
+      if (editing) await newsApi.updateNews(editing.id, { title: input.title, summary: input.summary, bodyMarkdown: input.bodyMarkdown, category: input.category, featured: input.featured, coverMediaId: input.coverMediaId, version: editing.version });
       else await newsApi.createNewsDraft(input as NewsCreateRequest);
       setEditing(null); setCreating(false); await refresh();
     } catch (cause) {
@@ -73,8 +73,8 @@ export function NewsWorkspace() {
 
   return <div className="workspace-section">
     <div className="module-toolbar">
-      <form className="module-search" onSubmit={(event) => { event.preventDefault(); setSubmittedQuery(query); }}><Icon name="search" size={17} /><input type="search" placeholder="Buscar noticias" aria-label="Buscar noticias" value={query} onChange={(event) => setQuery(event.target.value)} /><button className="quiet-button" type="submit">Buscar</button></form>
-      <button className="button button--primary" onClick={() => { setCreating(true); setEditing(null); setError(null); }}><Icon name="plus" size={17} /> Nuevo borrador</button>
+      <form className="module-search" onSubmit={(event) => { event.preventDefault(); setSubmittedQuery(query); }}><Icon name="search" size={17} /><input type="search" placeholder="Buscar noticias" aria-label="Buscar noticias" maxLength={120} value={query} onChange={(event) => setQuery(event.target.value)} /><button className="quiet-button" type="submit">Buscar</button></form>
+      <button className="button button--primary" onClick={() => { setCreating(true); setEditing(null); setError(null); setFieldIssues({}); }}><Icon name="plus" size={17} /> Nuevo borrador</button>
     </div>
     <div className="news-tabs" aria-label="Estado de noticias">{filters.map((filter) => <button key={filter.label} className={(status === filter.value ? "news-tab news-tab--active" : "news-tab")} onClick={() => setStatus(filter.value)}>{filter.label}</button>)}</div>
     {error && <div className="inline-error" role="alert"><span>{error}</span>{error.includes("version") || error.includes("cambió") ? <button onClick={() => { void reloadLatest(); }}>Recargar última versión</button> : null}</div>}
@@ -84,7 +84,7 @@ export function NewsWorkspace() {
       <div className="records-heading"><div><h2>Noticias</h2><p>{loading ? "Consultando la API…" : `${items.length} resultados`}</p></div><button className="quiet-button" onClick={() => { void refresh(); }} disabled={loading}><Icon name="arrow" size={15} /> Actualizar</button></div>
       {loading ? <p className="records-empty">Cargando contenido…</p> : items.length === 0 ? <p className="records-empty">No hay noticias para este filtro.</p> : <div className="records-list">{items.map((item) => <article className="record-row" key={item.id}>
         <div className="record-row__main"><span className={`status-tag status-tag--${item.status.toLowerCase()}`}>{statusLabels[item.status]}</span><h3>{item.title}</h3><p>{item.summary}</p><small>/{item.slug} · v{item.version} · {item.category}</small></div>
-        <div className="record-row__actions"><button className="quiet-button" onClick={() => { setEditing(item); setCreating(false); setError(null); }}>Editar</button>{item.status === "DRAFT" && <button className="button button--primary button--small" onClick={() => { void runAction(item, "publish"); }} disabled={busy === item.id}>Publicar</button>}{item.status !== "ARCHIVED" && <button className="quiet-button danger-text" onClick={() => { void runAction(item, "archive"); }} disabled={busy === item.id}>Archivar</button>}</div>
+        <div className="record-row__actions"><button className="quiet-button" onClick={() => { setEditing(item); setCreating(false); setError(null); setFieldIssues({}); }}>Editar</button>{item.status === "DRAFT" && <button className="button button--primary button--small" onClick={() => { void runAction(item, "publish"); }} disabled={busy === item.id}>Publicar</button>}{item.status !== "ARCHIVED" && <button className="quiet-button danger-text" onClick={() => { void runAction(item, "archive"); }} disabled={busy === item.id}>Archivar</button>}</div>
       </article>)}</div>}
     </section>
   </div>;
