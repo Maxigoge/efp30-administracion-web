@@ -1,28 +1,67 @@
 import { useState, type FormEvent } from "react";
-import { appConfig, apiReadiness } from "../config";
-import { getAuthGateway, IntegrationUnavailableError } from "../auth/gateway";
+import { ApiRequestError } from "../api/errors";
+import { appConfig } from "../config";
+import { useAuth } from "../auth/AuthProvider";
 import { Icon } from "./Icon";
+import { StatusBanner } from "./StatusBanner";
+
 export function LoginPanel() {
-  const [notice, setNotice] = useState<string | null>(null);
+  const { signIn, restoreError, retryRestore } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const ready = (appConfig.dataMode === "mock" && apiReadiness.sharedFixturesImported) || (appConfig.dataMode === "real" && apiReadiness.contractImported && apiReadiness.csrfStrategyConfigured);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setNotice(null);
-    const form = new FormData(event.currentTarget);
+    event.preventDefault();
+    setBusy(true);
+    setMessage(null);
     try {
-      const gateway = getAuthGateway();
-      await gateway.login(String(form.get("email") ?? ""), String(form.get("password") ?? ""));
-      setNotice("La sesión se inicia desde el servidor cuando el adaptador del contrato esté conectado.");
+      await signIn(email, password);
     } catch (error) {
-      setNotice(error instanceof IntegrationUnavailableError ? error.message : "No se pudo iniciar sesión.");
-    } finally { setBusy(false); }
+      setMessage(error instanceof ApiRequestError ? error.failure.message : "No se pudo iniciar sesión.");
+    } finally {
+      setBusy(false);
+    }
   }
+
+  function chooseMockAccount(value: string) {
+    setEmail(value);
+    setPassword("");
+    setMessage(null);
+  }
+
   return <section className="login-card" aria-labelledby="login-title">
-    <div className="login-card__mark"><Icon name="lock" size={21} /></div><p className="eyebrow">Área de gestión</p>
-    <h1 id="login-title">Ingresá a tu cuenta</h1><p className="login-card__intro">Usá tus credenciales institucionales para administrar los contenidos de la escuela.</p>
-    <form onSubmit={submit}><label htmlFor="email">Correo electrónico</label><input id="email" name="email" type="email" autoComplete="username" placeholder="nombre@efp30.edu.ar" required disabled={!ready || busy} /><label htmlFor="password">Contraseña</label><input id="password" name="password" type="password" autoComplete="current-password" placeholder="Tu contraseña" required disabled={!ready || busy} /><button className="button button--primary button--wide" type="submit" disabled={!ready || busy}>{busy ? "Conectando…" : "Iniciar sesión"} <Icon name="arrow" size={17} /></button></form>
-    {notice && <p className="login-notice" role="status">{notice}</p>}
-    <div className="login-card__security"><Icon name="shield" size={17} /><span>Sesiones de servidor · Protección CSRF del contrato</span></div>
-    <button className="text-button" type="button" onClick={() => setNotice("La restauración se habilitará junto con el endpoint de sesión de efp30-api.")}>¿Olvidaste tu contraseña?</button>
+    <div className="login-card__mark"><Icon name="lock" size={21} /></div>
+    <p className="eyebrow">ÁREA DE GESTIÓN</p>
+    <h1 id="login-title">Ingresá a tu cuenta</h1>
+    <p className="login-card__intro">Usá tus credenciales institucionales para administrar los contenidos de la escuela.</p>
+    {restoreError && <div className="inline-error" role="alert"><span>{restoreError}</span><button type="button" onClick={retryRestore}>Reintentar</button></div>}
+    <form onSubmit={submit}>
+      <label htmlFor="email">Correo electrónico</label>
+      <input id="email" name="email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@institución.edu.ar" required disabled={busy} />
+      <label htmlFor="password">Contraseña</label>
+      <input id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Tu contraseña" required minLength={1} disabled={busy} />
+      <button className="button button--primary button--wide" type="submit" disabled={busy}>{busy ? "Conectando…" : "Iniciar sesión"} <Icon name="arrow" size={17} /></button>
+    </form>
+    {message && <p className="login-notice" role="alert">{message}</p>}
+    {appConfig.dataMode === "mock" && <div className="mock-login">
+      <strong>Cuentas ficticias del mock</strong>
+      <span>El servidor compartido acepta cualquier contraseña no vacía para estas cuentas.</span>
+      <div><button type="button" onClick={() => chooseMockAccount("admin@efp30.test")}>Completar ADMIN</button><button type="button" onClick={() => chooseMockAccount("editora@efp30.test")}>Completar EDITOR</button></div>
+    </div>}
+    <div className="login-card__security"><Icon name="shield" size={17} /><span>Cookie HttpOnly del servidor · CSRF desde efp30-api</span></div>
   </section>;
+}
+
+export function LoginPage() {
+  return <main className="login-page">
+    <div className="login-brand"><div className="brand__seal">30</div><div><strong>EFP N°30</strong><small>ESCUELA DE FORMACIÓN PROFESIONAL</small></div></div>
+    <div className="login-layout">
+      <div className="login-aside"><span className="login-aside__orb" /><p className="eyebrow">ESCUELA PÚBLICA · FORMACIÓN PARA EL TRABAJO</p><h2>Una comunidad<br />que <em>aprende haciendo.</em></h2><p className="login-aside__description">Administrá noticias, cursos y la información institucional de EFP N°30.</p><div className="login-aside__foot"><Icon name="school" size={18} /> Administración institucional</div></div>
+      <LoginPanel />
+    </div>
+    <div className="login-status"><StatusBanner /></div>
+    <footer className="login-footer"><span>© EFP N°30 · Escuela de Formación Profesional</span><span>Acceso administrativo</span></footer>
+  </main>;
 }

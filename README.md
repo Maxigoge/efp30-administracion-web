@@ -2,13 +2,7 @@
 
 Aplicación administrativa independiente para la Escuela de Formación Profesional N°30. Stack: React, TypeScript y Vite.
 
-## Estado
-
-La API y sus fixtures compartidos se importaron desde el SHA 86682e93ab108f2484a75aa73f4888ecc72555b7. El origen, hash y el estado por hito están en docs/STATUS.md. El mock sólo se usa en desarrollo cuando VITE_ADMIN_DATA_MODE=mock; sus datos ficticios viven en memoria y se restablecen al reiniciar.
-
-El cliente usa la ruta relativa fija /api/v1 en el mismo host; no requiere una URL de API pública configurable. No define endpoints ni el mecanismo de CSRF: esas decisiones deben salir del OpenAPI oficial. El backend es responsable de validar ADMIN y EDITOR.
-
-Ver docs/STATUS.md para el estado por hito, el SHA del contrato y lo simulado frente a lo real.
+El contrato oficial OpenAPI v1, sus fixtures y mocks compartidos se copiaron de `efp30-api`; commit y SHA-256 exactos constan en [docs/STATUS.md](docs/STATUS.md). La app consume exclusivamente `/api/v1` en el mismo host. No define endpoints ni modifica el contrato.
 
 ## Desarrollo
 
@@ -19,19 +13,18 @@ npm ci
 npm run dev
 ~~~
 
-Abrir http://localhost:5173. Con .env.local en modo mock y npm run mock:api ejecutándose en otra terminal, la app usa el mock compartido de efp30-api; las escrituras son ficticias y sólo viven en memoria.
+Abrir http://localhost:5173. Para usar el mock compartido en otra terminal, ejecutar `npm run mock:api` y copiar `.env.example` a `.env.local`. El mock debe habilitarse explícitamente con `VITE_ADMIN_DATA_MODE=mock`; sus cuentas y datos son ficticios, sólo permanecen en memoria y no se envían emails. El modo `real` es el predeterminado y enruta `/api/v1` al gateway/backend local configurado.
 
-En otra terminal, iniciar el servidor mock compartido con npm run mock:api. Copiar .env.example a .env.local para que Vite enrute /api/v1 al mock. El modo real llama a la API detrás del gateway en el mismo host.
+`VITE_API_PROXY_TARGET` sólo configura el destino de proxy durante desarrollo. Variables `VITE_*` son públicas; no incluir secretos o credenciales.
 
-Para compilar:
+## Verificación
 
 ~~~sh
 npm run build
+npm run test:contract-mock
 ~~~
 
-VITE_ADMIN_DATA_MODE acepta mock o real. Las variables VITE_* son públicas y nunca deben contener credenciales.
-
-En desarrollo, VITE_API_PROXY_TARGET puede apuntar a un backend local para que Vite enrute /api/v1. En producción, el gateway Nginx del despliegue conjunto recibe el mismo host y enruta /api/v1 al backend.
+Las pruebas del mock comprueban el contrato simulado; no sustituyen comprobaciones contra API real. Estado por hito y pendientes: [docs/STATUS.md](docs/STATUS.md).
 
 ## Docker
 
@@ -40,8 +33,8 @@ docker build -t efp30-administracion-web .
 docker run --rm -p 8080:8080 efp30-administracion-web
 ~~~
 
-La imagen es multietapa; Nginx sirve estáticos como UID 10001 en el puerto 8080. El gateway de efp30-infra debe enrutar /api/v1 al backend y el resto al contenedor web. No se incluyen secretos ni configuración de túnel en esta imagen.
+La imagen sirve los estáticos como UID 10001 en el puerto 8080. En el despliegue conjunto, el gateway enruta `/api/v1` al backend y el resto al contenedor web. La imagen no incluye secretos ni configuración Cloudflare.
 
 ## Alcance excluido
 
-El campus queda fuera de esta aplicación: no incluye comisiones, matrículas, gestión de alumnos o docentes, aulas, actividades, entregas ni calificaciones.
+El campus queda fuera: no incluye comisiones, matrículas, gestión de alumnos/docentes, aulas, actividades, entregas ni calificaciones.

@@ -1,5 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
-export type IconName = "grid" | "news" | "courses" | "calendar" | "school" | "users" | "media" | "search" | "bell" | "chevron" | "arrow" | "lock" | "shield" | "clock" | "file" | "plus" | "menu" | "close";
+export type IconName = "grid" | "news" | "courses" | "calendar" | "school" | "users" | "media" | "search" | "bell" | "chevron" | "arrow" | "lock" | "shield" | "clock" | "file" | "plus" | "menu" | "close" | "logout";
 const paths: Record<IconName, ReactNode> = {
   grid: <><rect x="3" y="3" width="7" height="7" rx="1.4" /><rect x="14" y="3" width="7" height="7" rx="1.4" /><rect x="14" y="14" width="7" height="7" rx="1.4" /><rect x="3" y="14" width="7" height="7" rx="1.4" /></>,
   news: <><path d="M5 4.5h14a2 2 0 0 1 2 2V19a1.5 1.5 0 0 1-1.5 1.5H5A2.5 2.5 0 0 1 2.5 18V7A2.5 2.5 0 0 1 5 4.5Z" /><path d="M7 9h10M7 13h10M7 17h6" /></>,
@@ -18,6 +18,7 @@ const paths: Record<IconName, ReactNode> = {
   file: <><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10Z" /><path d="M13 3v7h7M8 15h8M8 18h6" /></>,
   plus: <path d="M12 5v14M5 12h14" />,
   menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
+  logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></>,
   close: <><path d="m6 6 12 12M18 6 6 18" /></>,
 };
 export function Icon({ name, size = 20, ...props }: SVGProps<SVGSVGElement> & { name: IconName; size?: number }) {
