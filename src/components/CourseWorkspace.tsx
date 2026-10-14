@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import * as api from "../api/content";
-import type { CarouselItem, CourseAdmin, CoursePhoto, CoursePhotosResponse, EditorialStatus, FamilyAdmin, MediaAdmin, Modality, EnrollmentStatus } from "../api/types";
+import type { CarouselItem, CourseAdmin, CourseUpdateRequest, CoursePhoto, CoursePhotosResponse, EditorialStatus, FamilyAdmin, MediaAdmin, Modality, EnrollmentStatus } from "../api/types";
 import { ApiError, errorText, isConflict, TextField } from "./ApiFeedback";
 import { Icon } from "./Icon";
 import { courseEditorHash } from "../navigation.mjs";
@@ -60,7 +60,7 @@ export function CourseWorkspace({ route, onNavigate, onDirtyChange }: { route: A
     ? familyDraft.name !== editingFamily.name
     : Boolean(familyDraft.name.trim() || familyDraft.slug.trim());
   useEffect(() => {
-    const blocked = ["course-save", "gallery-save", "upload", "family"].includes(busy ?? "");
+    const blocked = ["course-save", "cover-save", "gallery-save", "upload", "family"].includes(busy ?? "");
     onDirtyChange(courseDirty || galleryDirty || familyDirty || blocked, blocked);
     return () => onDirtyChange(false, false);
   }, [courseDirty, galleryDirty, familyDirty, busy, onDirtyChange]);
@@ -74,7 +74,7 @@ export function CourseWorkspace({ route, onNavigate, onDirtyChange }: { route: A
   }
 
   function mayStartRouteChange() {
-    if (["course-save", "gallery-save", "upload", "family"].includes(busy ?? "")) {
+    if (["course-save", "cover-save", "gallery-save", "upload", "family"].includes(busy ?? "")) {
       setError("Esperá a que termine la operación actual antes de cambiar de sección.");
       return false;
     }
@@ -265,6 +265,46 @@ export function CourseWorkspace({ route, onNavigate, onDirtyChange }: { route: A
     }
   }
 
+  async function saveCourseCover() {
+    if (!editing || (editorDraft.coverMediaId || "") === (editing.coverMediaId ?? "")) return;
+    setBusy("cover-save");
+    setError(null);
+    setConflictTarget(null);
+    let saved: CourseAdmin;
+    try {
+      const fields: CourseUpdateRequest = {
+        version: editing.version,
+        title: editing.title,
+        familyId: editing.familyId,
+        summary: editing.summary,
+        bodyMarkdown: editing.bodyMarkdown,
+        requirements: [...editing.requirements],
+        durationHours: editing.durationHours,
+        modality: editing.modality,
+        enrollmentStatus: editing.enrollmentStatus,
+        coverMediaId: editorDraft.coverMediaId || null,
+      };
+      saved = await api.updateCourse(editing.id, fields);
+    } catch (cause) {
+      setError(errorText(cause));
+      if (isConflict(cause)) setConflictTarget("course");
+      setBusy(null);
+      return;
+    }
+
+    setEditing(saved);
+    setEditorDraft((current) => ({ ...current, coverMediaId: saved.coverMediaId ?? "" }));
+    setGallery((current) => current?.courseId === saved.id ? { ...current, version: saved.version } : current);
+    setError(null);
+    try {
+      await refreshCourses();
+    } catch (cause) {
+      setError("La portada se guardó, pero no se pudo actualizar la lista. " + errorText(cause));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function reloadEditor() {
     if (!editing) return;
     if ((courseDirty || galleryDirty) && !window.confirm("Recargar descarta los cambios locales del curso y de su galería. ¿Querés continuar?")) return;
@@ -406,7 +446,7 @@ export function CourseWorkspace({ route, onNavigate, onDirtyChange }: { route: A
         media={media.filter((entry) => entry.mimeType.startsWith("image/") && entry.visibility === "PUBLIC" && entry.enabled)}
         activeTab={editorTab}
         onTabChange={selectEditorTab}
-        busy={busy === "course-save"}
+        busy={busy === "course-save" || busy === "cover-save"}
         courseDirty={courseDirty}
         courseBlocked={conflictTarget === "course"}
         onSave={saveCourse}
@@ -423,6 +463,8 @@ export function CourseWorkspace({ route, onNavigate, onDirtyChange }: { route: A
         onFileChange={uploadPhotos}
         onGalleryChange={setGalleryDraft}
         onSaveGallery={saveGallery}
+        onSaveCover={saveCourseCover}
+        coverSaving={busy === "cover-save"}
         onSelectCover={(coverMediaId) => setEditorDraft((current) => ({ ...current, coverMediaId }))}
       />}    </>}
   </div>;
@@ -477,6 +519,8 @@ function CourseEditor({
   onFileChange,
   onGalleryChange,
   onSaveGallery,
+  onSaveCover,
+  coverSaving,
   onSelectCover,
 }: {
   item: CourseAdmin | null;
@@ -503,6 +547,8 @@ function CourseEditor({
   onFileChange: (files: FileList | null) => void;
   onGalleryChange: (photos: CoursePhoto[]) => void;
   onSaveGallery: () => Promise<void>;
+  onSaveCover: () => Promise<void>;
+  coverSaving: boolean;
   onSelectCover: (coverMediaId: string) => void;
 }) {
   const field = <K extends keyof CourseDraft>(key: K, value: CourseDraft[K]) => {
@@ -510,6 +556,7 @@ function CourseEditor({
   };
   const familyOptions = families.filter((family) => family.active);
   const handleTabClick = () => onTabChange(activeTab === "gallery" ? "details" : "gallery");
+  const coverDirty = Boolean(item && (draft.coverMediaId || "") !== (item.coverMediaId ?? ""));
 
   return <section className="editor-panel course-editor">
     <div className="editor-panel__heading">
@@ -549,7 +596,7 @@ function CourseEditor({
     </form>}
 
     {item && activeTab === "gallery" && <>
-      {courseDirty && <p className="course-editor__pending-note" role="status">Hay cambios sin guardar en los datos del curso. La imagen de tarjeta se persiste con “Guardar cambios” en Datos, aparte de “Guardar galería”.</p>}
+      {courseDirty && <p className="course-editor__pending-note" role="status">{coverDirty ? "La foto elegida es una vista previa. Guardala con “Guardar portada”; los demás campos se guardan en Datos. La galería se guarda aparte con “Guardar galería”." : "Hay otros cambios sin guardar en los datos del curso. La galería se guarda aparte con “Guardar galería”."}</p>}
       <GalleryEditor
       course={item}
       version={gallery?.version ?? item.version}
@@ -565,6 +612,10 @@ function CourseEditor({
       onFileChange={onFileChange}
       onChange={onGalleryChange}
       onSave={onSaveGallery}
+      onSaveCover={onSaveCover}
+      coverDirty={coverDirty}
+      coverSaving={coverSaving}
+      courseBlocked={courseBlocked}
       onSelectCover={onSelectCover}
     />
     </>}
@@ -615,6 +666,10 @@ function GalleryEditor({
   onFileChange,
   onChange,
   onSave,
+  onSaveCover,
+  coverDirty,
+  coverSaving,
+  courseBlocked,
   onSelectCover,
 }: {
   course: CourseAdmin;
@@ -631,6 +686,10 @@ function GalleryEditor({
   onFileChange: (files: FileList | null) => void;
   onChange: (photos: CoursePhoto[]) => void;
   onSave: () => Promise<void>;
+  onSaveCover: () => Promise<void>;
+  coverDirty: boolean;
+  coverSaving: boolean;
+  courseBlocked: boolean;
   onSelectCover: (coverMediaId: string) => void;
 }) {
   const combinedPreview: CarouselItem[] = [
@@ -661,8 +720,8 @@ function GalleryEditor({
     {loading ? <p className="records-empty">Cargando galería…</p> : !loaded ? <div className="records-empty"><p>No se pudo cargar la galería.</p><button type="button" className="button button--secondary" onClick={onRetry}>Reintentar</button></div> : <>
       <div className="course-cover-current">
         <div>
-          <strong>Imagen de tarjeta del curso</strong>
-          <small>Se guarda con los datos del curso y no cambia la selección del carrusel.</small>
+          <strong>{coverDirty ? "Vista previa de imagen de tarjeta" : "Imagen de tarjeta del curso"}</strong>
+          <small>{coverDirty ? "Todavía no aparece en la oferta pública. Guardá la portada para aplicar esta selección." : "Se guarda por separado del carrusel de inicio."}</small>
         </div>
         {selectedCoverIsPublic && selectedCover?.url
           ? <img src={selectedCover.url} alt="" />
@@ -681,7 +740,7 @@ function GalleryEditor({
                 <strong>{asset?.originalName ?? "Imagen"}</strong>
                 <label>Texto alternativo<input minLength={1} maxLength={240} value={photo.alt} onChange={(event) => onChange(photos.map((entry, i) => i === index ? { ...entry, alt: event.target.value } : entry))} /></label>
                 <label className={coverMediaId === photo.mediaId ? "photo-cover-choice photo-cover-choice--selected" : "photo-cover-choice"}>
-                  <input type="radio" name={"course-gallery-cover-" + course.id} checked={coverMediaId === photo.mediaId} disabled={!coverSelectable} onChange={() => onSelectCover(photo.mediaId)} />
+                  <input type="radio" name={"course-gallery-cover-" + course.id} checked={coverMediaId === photo.mediaId} disabled={!coverSelectable || coverSaving} onChange={() => onSelectCover(photo.mediaId)} />
                   Usar como imagen de la tarjeta del curso
                   {!coverSelectable && <small>Medio no disponible para uso público</small>}
                 </label>
@@ -707,7 +766,8 @@ function GalleryEditor({
       </div>
       <div className="editor-actions">
         <span className="gallery-version">{photos.length} fotos · versión {version}</span>
-        <button type="button" className="button button--primary" disabled={saving || loading || !loaded} onClick={() => { void onSave(); }}>{saving ? "Guardando…" : "Guardar galería"}</button>
+        {coverDirty && <button type="button" className="button button--secondary" disabled={coverSaving || saving || courseBlocked || (!selectedCoverIsPublic && Boolean(coverMediaId))} onClick={() => { void onSaveCover(); }}>{coverSaving ? "Guardando portada…" : "Guardar portada"}</button>}
+        <button type="button" className="button button--primary" disabled={saving || coverSaving || loading || !loaded} onClick={() => { void onSave(); }}>{saving ? "Guardando…" : "Guardar galería"}</button>
       </div>
     </>}
   </section>;
