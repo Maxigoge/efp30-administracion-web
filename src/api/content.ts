@@ -45,6 +45,7 @@ export const uploadMedia = (file: File, visibility: MediaVisibility) => {
   return apiUpload<MediaAdmin>("/admin/media", form);
 };
 export const updateMedia = (id: string, body: { version: number; enabled: boolean; visibility: MediaVisibility }) => apiSend<MediaAdmin>(`/admin/media/${encodeURIComponent(id)}`, "PUT", body);
+export const getMedia = (id: string) => apiGet<MediaAdmin>("/admin/media/" + encodeURIComponent(id));
 export const listPublicEvents = (from: string, to: string) => {
   const query = new URLSearchParams({ from, to, page: "0", size: "100" });
   return apiGet<Page<EventPublic>>(`/public/eventos?${query.toString()}`);
